@@ -30,7 +30,9 @@ Pero tambien dicha aplicacion tiene un despliegue en heroku que puedes utilizar 
 ## Uso
 
 Despues de que el programa este corriendo localmente podemos verificar en el navegador con las siguientes URLS
+
 localhost:36000/index.html
+
 localhost:36000/Apps/hello
 
 ## Documentación
