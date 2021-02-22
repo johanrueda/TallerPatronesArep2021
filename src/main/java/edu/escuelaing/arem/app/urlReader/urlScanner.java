@@ -1,4 +1,4 @@
-package edu.escuelaing.arep.ASE.app.urlReader;
+package edu.escuelaing.arem.app.urlReader;
 
 // Ejercicio 1
 

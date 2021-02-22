@@ -1,0 +1,5 @@
+edu.escuelaing.arem.app
+edu.escuelaing.arem.app.component
+edu.escuelaing.arem.app.httpServer
+edu.escuelaing.arem.app.nanoSpark
+edu.escuelaing.arem.app.urlReader

@@ -1,75 +1,89 @@
 package edu.escuelaing.arem.app.httpServer;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
+import edu.escuelaing.arem.app.nanoSpark.MicroSpring;
 import java.net.*;
 import java.io.*;
-import java.nio.file.*;
-import java.util.*;
-import java.util.logging.*;
-import edu.escuelaing.arem.app.httpServer.
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
- * @author Johan
- * Clase HttpServer
+ * Clase que hace la conexion con el servicio
  */
 public class HttpServer {
-    private static boolean running;
-    private edu.escuelaing.arep.ASE.app.httpServer.dataBase connect= null;
-    private int port=36000;
-    private Map<String,String> request = new HashMap<>();
-    URIProcessor uriProcessor;
 
+    private int port = 36000;
+    private boolean running = false;
+    private MicroSpring iocServer;
 
-    public HttpServer(URIProcessor up){
-        this.up=up;
+    public HttpServer() {
     }
 
-    public HttpServer(int port){
-        this.port=port;
+    public HttpServer(MicroSpring iocServer) {
+        this.iocServer = iocServer;
     }
+
+    public HttpServer(int port) {
+        this.port = port;
+    }
+
     /**
-     * Metodo que inicia el HttpServer
+     * Metodo que retorna el puerto a la conexion
+     *
+     * @return El número de puerto del servicio.
      */
-    public  void startServer() {
-            try {
-                ServerSocket serverSocket = null;
-                try {
-                    serverSocket = new ServerSocket(getPort());
-                } catch (IOException e) {
-                    System.err.println("Could not listen on port: " + getPort());
-                    System.exit(1);
-                }
-
-                running = true;
-                while (running) {
-                    try {
-                        Socket clientSocket = null;
-                        try {
-                            System.out.println("Listo para recibir en puerto " + getPort() + "...");
-                            clientSocket = serverSocket.accept();
-                        } catch (IOException e) {
-                            System.err.println("Accept failed.");
-                            System.exit(1);
-                        }
-                        processRequest(clientSocket);
-                        clientSocket.close();
-                    } catch (IOException ex) {
-                        Logger.getLogger(HttpServer.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-                serverSocket.close();
-            } catch (IOException ex) {
-                Logger.getLogger(HttpServer.class.getName()).log(Level.SEVERE, null, ex);
-            }
+    static int getPort() {
+        if (System.getenv("PORT") != null) {
+            return Integer.parseInt(System.getenv("PORT"));
         }
+        return 36000;
+    }
 
-    /**
-     * Hace el proceso de las diferentes peticiones que hace el servidor
-     * @param clientSocket socket
-     * @throws IOException error
-     */
+    public void start() {
+
+        port = getPort();
+        try {
+            ServerSocket serverSocket = null;
+
+            try {
+                serverSocket = new ServerSocket(port);
+            } catch (IOException e) {
+                System.err.println("Could not listen on port: " + port);
+                System.exit(1);
+            }
+
+            running = true;
+            while (running) {
+                try {
+                    Socket clientSocket = null;
+                    try {
+                        System.out.println("Listo para recibir en puerto 36000 ...");
+                        clientSocket = serverSocket.accept();
+                    } catch (IOException e) {
+                        System.err.println("Accept failed.");
+                        System.exit(1);
+                    }
+
+                    processRequest(clientSocket);
+
+                    clientSocket.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(HttpServer.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            serverSocket.close();
+        } catch (IOException ex) {
+            Logger.getLogger(HttpServer.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
     private void processRequest(Socket clientSocket) throws IOException {
-        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(clientSocket.getInputStream()));
         String inputLine;
         Map<String, String> request = new HashMap<>();
         boolean requestLineReady = false;
@@ -78,7 +92,7 @@ public class HttpServer {
                 request.put("requestLine", inputLine);
                 requestLineReady = true;
             } else {
-                String[] entry = createEntry (inputLine);
+                String[] entry = createEntry(inputLine);
                 if (entry.length > 1) {
                     request.put(entry[0], entry[1]);
                 }
@@ -87,12 +101,15 @@ public class HttpServer {
                 break;
             }
         }
-        Request req = new Request(request.get("requestLine"));
+        if (request.get("requestLine") != null) {
+            Request req = new Request(request.get("requestLine"));
 
-        System.out.println("RequestLine: " + req);
+            System.out.println("RequestLine: " + req);
 
-        createResponse(req, new PrintWriter (clientSocket.getOutputStream(), true));
-        in.close();
+            createResponse(req, new PrintWriter(
+                    clientSocket.getOutputStream(), true));
+            in.close();
+        }
     }
 
     private String[] createEntry(String rawEntry) {
@@ -100,10 +117,10 @@ public class HttpServer {
     }
 
     private void createResponse(Request req, PrintWriter out) {
-        String outputLine = testResponse();
         URI theuri = req.getTheuri();
         if (theuri.getPath().startsWith("/Apps")) {
-            getAppResponse (theuri.getPath().substring(5), out);
+            String appuri = theuri.getPath().substring(5);
+            invokeApp(appuri, out);
         } else {
             getStaticResource(theuri.getPath(), out);
         }
@@ -111,36 +128,14 @@ public class HttpServer {
     }
 
 
-
-
-    private String testResponse() {
-        String outputLine = "HTTP/1.1 200 OK\r\n"
-                + "Content-Type: text/html\r\n"
-                + "\r\n"
-                + "<!DOCTYPE html>\n"
-                + "<html>\n"
-                + "<head>\n"
-                + "<meta charset=\"UTF-8\">\n"
-                + "<title>Title of the document</title>\n"
-                + "</head>\n"
-                + "<body>\n"
-                + "<h1>Mi propio mensaje</h1>\n"
-                + "</body>\n"
-                + "</html>\n";
-        return outputLine;
-    }
-
-    /**
-     * Obtiene los recuersos dependiendo de la peticion
-     * @param out URI
-     * @param path socket
-     * @throws IOException error
-     */
     private void getStaticResource(String path, PrintWriter out) {
         Path file = Paths.get("target/classes/public_html" + path);
         try (InputStream in = Files.newInputStream(file);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
-            String header = "HTTP/1.1 200 OK\r\n" + "Content-Type: text/html\r\n" + "\r\n";
+             BufferedReader reader
+                     = new BufferedReader(new InputStreamReader(in))) {
+            String header = "HTTP/1.1 200 OK\r\n"
+                    + "Content-Type: text/html\r\n"
+                    + "\r\n";
             out.println(header);
             String line = null;
             while ((line = reader.readLine()) != null) {
@@ -152,49 +147,12 @@ public class HttpServer {
         }
     }
 
-    /**
-     * Obtiene el recurso de las imagenes dependiendo de su extension
-     * @param requestURI URI
-     * @param outputStream OUT
-     */
-    private void getImage(String requestURI, OutputStream outputStream) {
-        File file = new File("src/main/resources/imagenes/" + requestURI);
+    private void invokeApp(String appuri, PrintWriter out) {
 
-        try {
-            BufferedImage pic = ImageIO.read(file);
-            ByteArrayOutputStream picShow = new ByteArrayOutputStream();
-            DataOutputStream picDraw = new DataOutputStream(outputStream);
-            ImageIO.write (pic, "JPG", picShow);
-            picDraw.writeBytes("HTTP/1.1 200 OK\r\n" + "Content-Type: image/jpg \r\n\r\n");
-            picDraw.write(picShow.toByteArray());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        String header = "HTTP/1.1 200 OK\r\n"
+                + "Content-Type: text/html\r\n"
+                + "\r\n";
+        String methodresponse = iocServer.invoke(appuri);
+        out.println(header + methodresponse);
     }
-
-
-    /**
-     * Obtiene los datos de la base de datos
-     * @return int
-     */
-    private String getDataBase() {
-        edu.escuelaing.arep.ASE.app.httpServer.dataBase db = new dataBase();
-        ArrayList<String []> data = db.getTable();
-        String list = "";
-        for (String [] datos : data) {
-            list += datos [0] + ". Nombre : " + datos [1] + "\n";
-        }
-        return list;
-    }
-
-    /**
-     * Retorna el puerto
-     * @return int
-     */
-    private int getPort() {
-        if(System.getenv("PORT") != null){
-            return Integer.parseInt(System.getenv("PORT"));
-        }
-        return 36000;
-    }
-    }
+}

@@ -9,36 +9,25 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * @author Johan
- * Clase principal de respuesta de las peticiones tipo URI
+ * Clase que responde a las peticiones
  */
 
 public class Request {
-    private String metodo;
+
+    private String method;
     private String requestURI;
     private String HTTPVersion;
     private URI theuri;
-    private Map<String, String> query;
+    private Map<String,String> query;
 
-    /**
-     * clase hace realiza solicitudes de tipo URI
-     *
-     * @param inputLine input
-     */
-    public Request(String inputLine) {
-        parseQuery(inputLine);
+    public Request(String requestLine){
+        parseRequestLine(requestLine);
     }
 
-    /**
-     * Clase que mapea la peticion URI
-     *
-     * @param requestLine query
-     * @return Mapeo
-     */
-    public void parseRequestLine(String requestLine) {
+    public void parseRequestLine(String requestLine){
         try {
-            String[] components = requestLine.split("\\s");
-            metodo = components[0];
+            String[] components= requestLine.split("\\s");
+            method = components[0];
             requestURI = components[1];
             HTTPVersion = components[2];
             setTheuri(new URI(requestURI));
@@ -49,68 +38,62 @@ public class Request {
 
     }
 
+    /**
+     * @return the method
+     */
     public String getMethod() {
-        return metodo;
+        return method;
     }
 
     /**
-     * Retorna URI
-     *
-     * @return URI
+     * @return the requestURI
      */
     public String getRequestURI() {
         return requestURI;
     }
 
     /**
-     * metodo que convierte a string
-     *
-     * @return URI
+     * @return the HTTPVersion
      */
-    public String toString() {
-        return metodo + " " + requestURI + " " + HTTPVersion + "\n\r" + getTheuri() + "\n\r" + "Query: " + query;
+    public String getHTTPVersion() {
+        return HTTPVersion;
+    }
+
+    public String toString(){
+        return method + " " + requestURI + " " + HTTPVersion + "\n\r" +
+                getTheuri() + "\n\r" +
+                "Query: " + query;
     }
 
     /**
-     * obtiene el uri
-     *
-     * @return URI
+     * @return the theuri
      */
-    private URI getTheuri() {
+    public URI getTheuri() {
         return theuri;
     }
 
     /**
-     * Cambia el uri
-     *
-     * @param theuri cambio  URI
+     * @param theuri the theuri to set
      */
     public void setTheuri(URI theuri) {
         this.theuri = theuri;
     }
 
-    public String getHTTPVersion() {
-        return HTTPVersion;
-    }
-
     private Map<String, String> parseQuery(String query) {
-        if (query == null) return null;
+        if( query == null) return null;
         Map<String, String> theQuery = new HashMap();
         String[] nameValuePairs = query.split("&");
-        for (String nameValuePair : nameValuePairs) {
+        for(String nameValuePair: nameValuePairs){
             int index = nameValuePair.indexOf("=");
-            if (index != -1) {
-                theQuery.put(nameValuePair.substring(0, index), nameValuePair.substring(index + 1));
+            if(index!=-1){
+                theQuery.put(nameValuePair.substring(0, index), nameValuePair.substring(index+1));
             }
         }
         return theQuery;
     }
 
-    public String getValFromQuery(String varname) {
+    public String getValFromQuery(String varname){
         return query.get(varname);
     }
 
-
-
-    
 }

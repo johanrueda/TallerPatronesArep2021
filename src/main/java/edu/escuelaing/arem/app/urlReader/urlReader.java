@@ -1,4 +1,4 @@
-package edu.escuelaing.arep.ASE.app.urlReader;
+package edu.escuelaing.arem.app.urlReader;
 
 
 import java.io.*;
@@ -7,39 +7,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-// Ejercicio 2
+public class urlReader {
 
-/**
- * @author Johan
- * clase principal que inicia el proceso para el ejercicio 2
- */
-
-class URLReader {
-
-    /**
-     * Meotodo que inicia el proceso de leer la url
-     * @param args args
-     */
     public static void main(String[] args) {
-        readURL("http://localhost:36000/archivo.do?value=67");
+        readURL("http://localhost:36000/otroarchivoaqui.do?value=56");
+
     }
 
-    /**
-     * Metodo que leee la URL
-     * @param sitetoread site
-     */
     public static void readURL(String sitetoread) {
-
         try {
             // Crea el objeto que representa una URL2
             URL siteURL = new URL(sitetoread);
-            System.out.println(siteURL);
             // Crea el objeto que URLConnection
             URLConnection urlConnection = siteURL.openConnection();
-            System.out.println(urlConnection);
             // Obtiene los campos del encabezado y los almacena en un estructura Map
             Map<String, List<String>> headers = urlConnection.getHeaderFields();
-
             // Obtiene una vista del mapa como conjunto de pares <K,V>
             // para poder navegarlo
             Set<Map.Entry<String, List<String>>> entrySet = headers.entrySet();
@@ -69,5 +51,4 @@ class URLReader {
             System.err.println(x);
         }
     }
-    }
-
+}
